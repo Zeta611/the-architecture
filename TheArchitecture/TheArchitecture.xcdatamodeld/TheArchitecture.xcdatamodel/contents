@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="21513" systemVersion="22A400" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="GroupStore" representedClassName="GroupStore" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="items" toMany="YES" deletionRule="Cascade" destinationEntity="ItemStore" inverseName="group" inverseEntity="ItemStore"/>
+    </entity>
+    <entity name="ItemStore" representedClassName="ItemStore" syncable="YES" codeGenerationType="class">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String"/>
+        <relationship name="group" maxCount="1" deletionRule="Nullify" destinationEntity="GroupStore" inverseName="items" inverseEntity="GroupStore"/>
+    </entity>
+</model>
