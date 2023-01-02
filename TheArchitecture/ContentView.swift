@@ -8,8 +8,10 @@
 import SwiftUI
 
 struct ContentView: View {
+    @FetchRequest(sortDescriptors: []) var groups: FetchedResults<GroupStore>
+
     var body: some View {
-        GroupView()
+        GroupView(viewModel: GroupViewModel(groups: groups.map(Group.init)))
     }
 }
 

@@ -7,88 +7,72 @@
 
 import SwiftUI
 
-struct ItemView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+final class ItemViewModel: ObservableObject {
+    @Published var group: Group
 
-    @ObservedObject private(set) var group: GroupStore
-    private var items: [ItemStore] {
-        return Array(group.items! as! Set<ItemStore>).sorted(by: { x, y in
-            x.name! < y.name!
-            || x.name! == y.name! && x.id!.uuidString < y.id!.uuidString
-        })
+    // Used in case when this view can remove the group itself
+    var onDelete: () -> Void = { }
+
+    init(group: Group) {
+        self.group = group
+        self.group.items.sort()
     }
+
+    func addItem() {
+        withAnimation {
+            let newItem = Item(id: UUID(), name: "I\(group.items.count + 1)")
+            group.items.append(newItem)
+            group.items.sort()
+        }
+    }
+
+    func deleteItems(offsets: IndexSet) {
+        group.items.remove(atOffsets: offsets)
+    }
+}
+
+struct ItemView: View {
+    @ObservedObject private(set) var viewModel: ItemViewModel
     
     var body: some View {
-        Group {
-            if group.isFault {
-                EmptyView()
-            } else {
-                List {
-                    ForEach(items, id: \.self) { item in
-                        Text(item.name!)
-                    }
-                    .onDelete(perform: deleteItems)
-                }
-                .navigationTitle(group.name!)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        EditButton()
-                    }
-                    ToolbarItem {
-                        Button(action: addItem) {
-                            Label("Add Item", systemImage: "plus")
-                        }
-                    }
+        //        SwiftUI.Group {
+        //            if viewModel.group {
+        //                EmptyView()
+        //            } else {
+        List {
+            ForEach(viewModel.group.items) { item in
+                Text(item.name)
+            }
+            .onDelete(perform: viewModel.deleteItems)
+        }
+        .navigationTitle(viewModel.group.name)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                EditButton()
+            }
+            ToolbarItem {
+                Button(action: viewModel.addItem) {
+                    Label("Add Item", systemImage: "plus")
                 }
             }
         }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = ItemStore(context: viewContext)
-            newItem.id = UUID()
-            newItem.name = "I\(items.count + 1)"
-            newItem.group = group
-
-            do {
-                try viewContext.save()
-            } catch {
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            let items = items
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
-        }
+        //            }
+        //        }
     }
 }
 
 struct ItemView_Previews: PreviewProvider {
     static let group = {
         let viewContext = PersistenceController.preview.container.viewContext
-        do {
-            let groups = try viewContext.fetch(GroupStore.fetchRequest())
-            return groups.first!
-        } catch {
-            fatalError("\(error)")
-        }
+        let groups = try! viewContext.fetch(GroupStore.fetchRequest())
+        return groups.first!
     }()
 
     static var previews: some View {
         NavigationStack {
-            ItemView(group: group).environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+            ItemView(
+                viewModel: ItemViewModel(group: Group(store: group))
+            ).environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
         }
     }
 }

@@ -15,6 +15,9 @@
 		6940884B2962CADD009134D0 /* TheArchitecture.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 694088492962CADD009134D0 /* TheArchitecture.xcdatamodeld */; };
 		694088542962DDAE009134D0 /* GroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694088532962DDAE009134D0 /* GroupView.swift */; };
 		694088562962DDB5009134D0 /* ItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694088552962DDB5009134D0 /* ItemView.swift */; };
+		6940885C2962FD4A009134D0 /* Group.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6940885B2962FD4A009134D0 /* Group.swift */; };
+		6940885E2962FD53009134D0 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6940885D2962FD53009134D0 /* Item.swift */; };
+		694088602962FDE7009134D0 /* CoreData+extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6940885F2962FDE7009134D0 /* CoreData+extensions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +30,9 @@
 		6940884A2962CADD009134D0 /* TheArchitecture.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = TheArchitecture.xcdatamodel; sourceTree = "<group>"; };
 		694088532962DDAE009134D0 /* GroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupView.swift; sourceTree = "<group>"; };
 		694088552962DDB5009134D0 /* ItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemView.swift; sourceTree = "<group>"; };
+		6940885B2962FD4A009134D0 /* Group.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Group.swift; sourceTree = "<group>"; };
+		6940885D2962FD53009134D0 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
+		6940885F2962FDE7009134D0 /* CoreData+extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoreData+extensions.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +69,9 @@
 				694088402962CADC009134D0 /* ContentView.swift */,
 				694088532962DDAE009134D0 /* GroupView.swift */,
 				694088552962DDB5009134D0 /* ItemView.swift */,
+				6940885B2962FD4A009134D0 /* Group.swift */,
+				6940885D2962FD53009134D0 /* Item.swift */,
+				6940885F2962FDE7009134D0 /* CoreData+extensions.swift */,
 				694088472962CADD009134D0 /* Persistence.swift */,
 				694088422962CADD009134D0 /* Assets.xcassets */,
 				694088492962CADD009134D0 /* TheArchitecture.xcdatamodeld */,
@@ -149,9 +158,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6940885C2962FD4A009134D0 /* Group.swift in Sources */,
 				6940884B2962CADD009134D0 /* TheArchitecture.xcdatamodeld in Sources */,
 				694088562962DDB5009134D0 /* ItemView.swift in Sources */,
+				694088602962FDE7009134D0 /* CoreData+extensions.swift in Sources */,
 				694088482962CADD009134D0 /* Persistence.swift in Sources */,
+				6940885E2962FD53009134D0 /* Item.swift in Sources */,
 				694088542962DDAE009134D0 /* GroupView.swift in Sources */,
 				694088412962CADC009134D0 /* ContentView.swift in Sources */,
 				6940883F2962CADC009134D0 /* TheArchitectureApp.swift in Sources */,
