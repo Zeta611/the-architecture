@@ -18,6 +18,7 @@
 		6940885C2962FD4A009134D0 /* Group.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6940885B2962FD4A009134D0 /* Group.swift */; };
 		6940885E2962FD53009134D0 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6940885D2962FD53009134D0 /* Item.swift */; };
 		694088602962FDE7009134D0 /* CoreData+extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6940885F2962FDE7009134D0 /* CoreData+extensions.swift */; };
+		69CB2E6829635C11003EEE9F /* SwiftUINavigation in Frameworks */ = {isa = PBXBuildFile; productRef = 69CB2E6729635C11003EEE9F /* SwiftUINavigation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				69CB2E6829635C11003EEE9F /* SwiftUINavigation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -104,6 +106,9 @@
 			dependencies = (
 			);
 			name = TheArchitecture;
+			packageProductDependencies = (
+				69CB2E6729635C11003EEE9F /* SwiftUINavigation */,
+			);
 			productName = TheArchitecture;
 			productReference = 6940883B2962CADC009134D0 /* TheArchitecture.app */;
 			productType = "com.apple.product-type.application";
@@ -132,6 +137,9 @@
 				Base,
 			);
 			mainGroup = 694088322962CADC009134D0;
+			packageReferences = (
+				69CB2E6629635C11003EEE9F /* XCRemoteSwiftPackageReference "swiftui-navigation" */,
+			);
 			productRefGroup = 6940883C2962CADC009134D0 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -369,6 +377,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		69CB2E6629635C11003EEE9F /* XCRemoteSwiftPackageReference "swiftui-navigation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swiftui-navigation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.4.5;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		69CB2E6729635C11003EEE9F /* SwiftUINavigation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 69CB2E6629635C11003EEE9F /* XCRemoteSwiftPackageReference "swiftui-navigation" */;
+			productName = SwiftUINavigation;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCVersionGroup section */
 		694088492962CADD009134D0 /* TheArchitecture.xcdatamodeld */ = {

@@ -7,53 +7,118 @@
 
 import Combine
 import SwiftUI
+import SwiftUINavigation
 
 final class GroupViewModel: ObservableObject {
     @Published var groups: [Group]
-    @Published var selectedGroups: Set<UUID> = [] {
-        didSet {
-            if let groupId = selectedGroups.first,
-               selectedGroups.count == 1
-            {
-                if let oldGroupId = oldValue.first,
-                   oldValue.count == 1 && oldGroupId == groupId
-                {
-                    // same group selected
-                    return
-                }
-
-                guard let group = groups.first(where: { $0.id == groupId }) else {
-                    fatalError("programming error")
-                }
-                navigationDestination = .itemView(ItemViewModel(group: group))
-            } else {
-                navigationDestination = nil
-            }
-        }
-    }
+    @Published var selectedGroups: Set<UUID> = []
 
     @Published var navigationDestination: NavigationDestination? {
         didSet { bind() }
     }
     private var destinationCancellable: AnyCancellable?
-
     enum NavigationDestination {
         case itemView(ItemViewModel)
     }
 
-    @Published var editMode: EditMode = .inactive
-    @Published var editDestination: EditDestination = .inactive {
-        didSet { bindEditMode() }
+    var editMode: Binding<EditMode> {
+        Binding { [weak self] in
+            guard let self else { return .inactive }
+            switch self.editDestination {
+            case .none:
+                return .inactive
+            case .isEditing:
+                return .active
+            }
+        } set: { [weak self] editMode in
+            guard let self else { return }
+            self.editDestination = .isEditing(nil)
+        }
     }
+
+    @Published var editDestination: EditDestination?
     enum EditDestination: Equatable {
-        case inactive
-        case active(confirm: Bool)
+        case isEditing(ConfirmationDialogState<DialogAction>?)
+
+        enum DialogAction {
+            case delete
+            case cancel
+        }
     }
 
     init(groups: [Group]) {
         self.groups = groups
         self.groups.sort()
-        self.bind()
+        bind()
+    }
+
+    func groupTapped(_ group: Group) {
+        navigationDestination = .itemView(ItemViewModel(group: group))
+    }
+
+    func addGroup() {
+        let newGroup = Group(id: UUID(), name: "G\(groups.count + 1)", items: [])
+        groups.append(newGroup)
+        groups.sort()
+    }
+
+    func deleteGroups(offsets: IndexSet) {
+        groups.remove(atOffsets: offsets)
+    }
+
+    func delete(group: Group) {
+        guard let index = groups.firstIndex(of: group) else {
+            assertionFailure()
+            return
+        }
+        groups.remove(at: index)
+        if case let .itemView(itemViewModel) = navigationDestination,
+            itemViewModel.group.id == group.id
+        {
+            navigationDestination = nil
+        }
+    }
+
+    func toggleEditMode() {
+        withAnimation {
+            switch editDestination {
+            case .isEditing:
+                editDestination = nil
+            case .none:
+                editDestination = .isEditing(nil)
+            }
+        }
+    }
+
+    func deleteSelectedGroups() {
+        withAnimation {
+            groups.removeAll { group in
+                selectedGroups.contains { group.id == $0 }
+            }
+            editDestination = nil
+        }
+    }
+
+    func dispatch(_ action: EditDestination.DialogAction) {
+        switch action {
+        case .cancel:
+            editDestination = .isEditing(nil)
+        case .delete:
+            deleteSelectedGroups()
+        }
+    }
+
+    func confirmDelete() {
+        editDestination = .isEditing(
+            ConfirmationDialogState(
+                title: TextState("Delete \(selectedGroups.count) groups?"),
+                titleVisibility: .visible,
+                buttons: [
+                    .destructive(TextState("Delete"), action: .send(.delete)),
+                    .cancel(TextState("Cancel"), action: .send(.cancel))
+                ]
+            )
+        )
     }
 
     private func bind() {
@@ -74,80 +139,39 @@ final class GroupViewModel: ObservableObject {
             self.groups[index] = group
         }
     }
-
-    private func bindEditMode() {
-        withAnimation {
-            switch editDestination {
-            case .inactive:
-                editMode = .inactive
-            case .active(confirm: _):
-                editMode = .active
-            }
-        }
-    }
-
-    func addGroup() {
-        let newGroup = Group(id: UUID(), name: "G\(groups.count + 1)", items: [])
-        groups.append(newGroup)
-        groups.sort()
-    }
-
-    func deleteGroups(offsets: IndexSet) {
-        groups.remove(atOffsets: offsets)
-    }
-
-    func delete(group: Group) {
-        guard let index = groups.firstIndex(of: group) else {
-            assertionFailure()
-            return
-        }
-        groups.remove(at: index)
-    }
-
-    func toggleEditMode() {
-        switch editDestination {
-        case .active(confirm: _):
-            editDestination = .inactive
-        case .inactive:
-            editDestination = .active(confirm: false)
-        }
-    }
-
-    func deleteSelectedGroups() {
-        withAnimation {
-            groups.removeAll { group in
-                selectedGroups.contains { group.id == $0 }
-            }
-            editDestination = .inactive
-        }
-    }
-
-    func confirmDelete() {
-        editDestination = .active(confirm: true)
-    }
 }
 
 struct GroupView: View {
     @ObservedObject private(set) var viewModel: GroupViewModel
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationSplitView {
             List(selection: $viewModel.selectedGroups) {
                 ForEach(viewModel.groups) { group in
-                    NavigationLink(group.name, value: group.id)
-                        .swipeActions {
-                            Button("Delete", role: .destructive) {
-                                viewModel.delete(group: group)
-                            }
+                    Button {
+                        viewModel.groupTapped(group)
+                    } label: {
+                        HStack(spacing: 0) {
+                            Text(group.name)
+                            Spacer()
                         }
+                        // a hack to make the button tappable outside the text
+                        .contentShape(Rectangle())
+                    }
+                    .swipeActions {
+                        Button("Delete", role: .destructive) {
+                            viewModel.delete(group: group)
+                        }
+                    }
                 }
             }
             .navigationTitle("Groups")
-            .environment(\.editMode, $viewModel.editMode)
+            .environment(\.editMode, viewModel.editMode)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(
-                        viewModel.editMode.isEditing ? "Done" : "Edit",
+                        viewModel.editMode.wrappedValue.isEditing ? "Done" : "Edit",
                         action: viewModel.toggleEditMode
                     )
                 }
@@ -156,23 +180,14 @@ struct GroupView: View {
                             Label("Add Group", systemImage: "plus")
                     }
                 }
-                if viewModel.editMode.isEditing {
+                if viewModel.editMode.wrappedValue.isEditing {
                     ToolbarItem(placement: .bottomBar) {
                         Button("Delete", action: viewModel.confirmDelete)
                     }
                 }
             }
-            .confirmationDialog(
-                "Delete \(viewModel.selectedGroups.count)",
-                isPresented: Binding {
-                    viewModel.editDestination == .active(confirm: true)
-                } set: {
-                    guard case .active = viewModel.editDestination else { return }
-                    viewModel.editDestination = .active(confirm: $0)
-                }
-            ) {
-                Button("Delete", role: .destructive, action: viewModel.deleteSelectedGroups)
-                Button("Cancel", role: .cancel) {}
+            .confirmationDialog(unwrapping: $viewModel.editDestination, case: /GroupViewModel.EditDestination.isEditing) { action in
+                viewModel.dispatch(action)
             }
         } detail: {
             if case let .itemView(itemViewModel) = viewModel.navigationDestination {
