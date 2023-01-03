@@ -48,10 +48,18 @@ final class GroupViewModel: ObservableObject {
         }
     }
 
-    init(groups: IdentifiedArrayOf<Group>) {
+    init(
+        groups: IdentifiedArrayOf<Group>,
+        navigationDestination: NavigationDestination? = nil,
+        editDestination: EditDestination? = nil
+    ) {
+        defer { bind() }
+
         self.groups = groups
-        self.groups.sort()
-        bind()
+        defer { self.groups.sort() }
+
+        self.navigationDestination = navigationDestination
+        self.editDestination = editDestination
     }
 
     func groupTapped(_ group: Group) {
@@ -110,16 +118,7 @@ final class GroupViewModel: ObservableObject {
     }
 
     func confirmDelete() {
-        editDestination = .isEditing(
-            ConfirmationDialogState(
-                title: TextState("Delete \(selectedGroups.count) groups?"),
-                titleVisibility: .visible,
-                buttons: [
-                    .destructive(TextState("Delete"), action: .send(.delete)),
-                    .cancel(TextState("Cancel"), action: .send(.cancel))
-                ]
-            )
-        )
+        editDestination = .isEditing(.deleteGroups)
     }
 
     private func bind() {
@@ -197,14 +196,33 @@ struct GroupView: View {
     }
 }
 
-struct GroupView_Previews: PreviewProvider {
-    static let groups = {
-        let viewContext = PersistenceController.preview.container.viewContext
-        let groups = try! viewContext.fetch(GroupStore.fetchRequest())
-        return IdentifiedArray(uniqueElements: groups.map(Group.init))
-    }()
+extension ConfirmationDialogState where Action == GroupViewModel.EditDestination.DialogAction {
+    static let deleteGroups = ConfirmationDialogState(
+        title: TextState("Delete groups?"),
+        titleVisibility: .visible,
+        buttons: [
+            .destructive(TextState("Delete"), action: .send(.delete)),
+            .cancel(TextState("Cancel"), action: .send(.cancel))
+        ]
+    )
+}
 
+struct GroupView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupView(viewModel: GroupViewModel(groups: groups)).environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        let viewContext = PersistenceController.preview.container.viewContext
+        let groupStores = try! viewContext.fetch(GroupStore.fetchRequest())
+        let groups = IdentifiedArray(uniqueElements: groupStores.map(Group.init))
+
+        GroupView(
+            viewModel: GroupViewModel(
+                groups: groups,
+                navigationDestination: .itemView(
+                    ItemViewModel(group: groups.first { $0.name == "G2" }!)
+                ),
+                editDestination: .isEditing(.deleteGroups)
+            )
+        )
+        .environment(\.managedObjectContext, viewContext)
+        .previewInterfaceOrientation(.landscapeLeft)
     }
 }

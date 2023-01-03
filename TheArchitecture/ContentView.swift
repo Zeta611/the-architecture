@@ -12,11 +12,22 @@ struct ContentView: View {
     @FetchRequest(sortDescriptors: []) var groups: FetchedResults<GroupStore>
 
     var body: some View {
+        let groups = IdentifiedArray(uniqueElements: groups.map(Group.init))
+
         GroupView(
             viewModel: GroupViewModel(
-                groups: IdentifiedArray(uniqueElements: groups.map(Group.init))
+                groups: groups,
+                navigationDestination: .itemView(
+                    ItemViewModel(group: groups.first { $0.name == "G4" }!)
+                ),
+                editDestination: .isEditing(.deleteGroups)
             )
         )
+//        GroupView(
+//            viewModel: GroupViewModel(
+//                groups: IdentifiedArray(uniqueElements: groups.map(Group.init))
+//            )
+//        )
     }
 }
 

@@ -62,17 +62,16 @@ struct ItemView: View {
 }
 
 struct ItemView_Previews: PreviewProvider {
-    static let group = {
+    static var previews: some View {
         let viewContext = PersistenceController.preview.container.viewContext
         let groups = try! viewContext.fetch(GroupStore.fetchRequest())
-        return groups.first!
-    }()
+        let group = groups.first!
 
-    static var previews: some View {
         NavigationStack {
             ItemView(
                 viewModel: ItemViewModel(group: Group(store: group))
-            ).environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+            )
+            .environment(\.managedObjectContext, viewContext)
         }
     }
 }
