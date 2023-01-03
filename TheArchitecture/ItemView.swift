@@ -20,7 +20,7 @@ final class ItemViewModel: ObservableObject {
 
     func addItem() {
         withAnimation {
-            let newItem = Item(id: UUID(), name: "I\(group.items.count + 1)")
+            let newItem = Item(id: Item.ID(UUID()), name: "I\(group.items.count + 1)")
             group.items.append(newItem)
             group.items.sort()
         }

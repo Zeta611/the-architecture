@@ -6,12 +6,14 @@
 //
 
 import Combine
+import IdentifiedCollections
 import SwiftUI
 import SwiftUINavigation
+import Tagged
 
 final class GroupViewModel: ObservableObject {
-    @Published var groups: [Group]
-    @Published var selectedGroups: Set<UUID> = []
+    @Published var groups: IdentifiedArrayOf<Group>
+    @Published var selectedGroups: Set<Group.ID> = []
 
     @Published var navigationDestination: NavigationDestination? {
         didSet { bind() }
@@ -46,7 +48,7 @@ final class GroupViewModel: ObservableObject {
         }
     }
 
-    init(groups: [Group]) {
+    init(groups: IdentifiedArrayOf<Group>) {
         self.groups = groups
         self.groups.sort()
         bind()
@@ -57,7 +59,7 @@ final class GroupViewModel: ObservableObject {
     }
 
     func addGroup() {
-        let newGroup = Group(id: UUID(), name: "G\(groups.count + 1)", items: [])
+        let newGroup = Group(id: Group.ID(UUID()), name: "G\(groups.count + 1)", items: [])
         groups.append(newGroup)
         groups.sort()
     }
@@ -67,11 +69,10 @@ final class GroupViewModel: ObservableObject {
     }
 
     func delete(group: Group) {
-        guard let index = groups.firstIndex(of: group) else {
+        guard groups.remove(group) != nil else {
             assertionFailure()
             return
         }
-        groups.remove(at: index)
         if case let .itemView(itemViewModel) = navigationDestination,
             itemViewModel.group.id == group.id
         {
@@ -93,7 +94,7 @@ final class GroupViewModel: ObservableObject {
     func deleteSelectedGroups() {
         withAnimation {
             groups.removeAll { group in
-                selectedGroups.contains { group.id == $0 }
+                selectedGroups.contains(group.id)
             }
             editDestination = nil
         }
@@ -133,10 +134,7 @@ final class GroupViewModel: ObservableObject {
 
         destinationCancellable = itemViewModel.$group.sink { [weak self] group in
             guard let self else { return }
-            guard let index = self.groups.firstIndex(where: { $0.id == group.id }) else {
-                return
-            }
-            self.groups[index] = group
+            self.groups[id: group.id] = group
         }
     }
 }
@@ -203,7 +201,7 @@ struct GroupView_Previews: PreviewProvider {
     static let groups = {
         let viewContext = PersistenceController.preview.container.viewContext
         let groups = try! viewContext.fetch(GroupStore.fetchRequest())
-        return groups.map(Group.init)
+        return IdentifiedArray(uniqueElements: groups.map(Group.init))
     }()
 
     static var previews: some View {

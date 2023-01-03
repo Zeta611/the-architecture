@@ -6,12 +6,14 @@
 //
 
 import Foundation
+import IdentifiedCollections
+import Tagged
 
 // Should have named this differently...
 struct Group: Identifiable, Hashable, Comparable {
-    let id: UUID
+    let id: Tagged<Group, UUID>
     var name: String
-    var items: [Item]
+    var items: IdentifiedArrayOf<Item>
 
     static func < (lhs: Self, rhs: Self) -> Bool {
         lhs.name < rhs.name

@@ -6,12 +6,17 @@
 //
 
 import SwiftUI
+import IdentifiedCollections
 
 struct ContentView: View {
     @FetchRequest(sortDescriptors: []) var groups: FetchedResults<GroupStore>
 
     var body: some View {
-        GroupView(viewModel: GroupViewModel(groups: groups.map(Group.init)))
+        GroupView(
+            viewModel: GroupViewModel(
+                groups: IdentifiedArray(uniqueElements: groups.map(Group.init))
+            )
+        )
     }
 }
 

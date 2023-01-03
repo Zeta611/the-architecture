@@ -6,18 +6,19 @@
 //
 
 import CoreData
+import IdentifiedCollections
 
 extension Group {
     init(store: GroupStore) {
-        id = store.id!
+        id = Group.ID(store.id!)
         name = store.name!
-        items = (store.items! as! Set<ItemStore>).map(Item.init)
+        items = IdentifiedArray(uniqueElements: (store.items! as! Set<ItemStore>).map(Item.init))
     }
 
     @discardableResult
     func store(context: NSManagedObjectContext, items: Set<ItemStore>) -> GroupStore {
         let store = GroupStore(context: context)
-        store.id = id
+        store.id = id.rawValue
         store.name = name
         store.items = items as NSSet
         return store
@@ -26,14 +27,14 @@ extension Group {
 
 extension Item {
     init(store: ItemStore) {
-        id = store.id!
+        id = Item.ID(store.id!)
         name = store.name!
     }
 
     @discardableResult
     func store(context: NSManagedObjectContext, group: GroupStore) -> ItemStore {
         let store = ItemStore(context: context)
-        store.id = id
+        store.id = id.rawValue
         store.name = name
         store.group = group
         return store

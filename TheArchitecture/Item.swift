@@ -6,9 +6,10 @@
 //
 
 import Foundation
+import Tagged
 
 struct Item: Identifiable, Hashable, Comparable {
-    let id: UUID
+    let id: Tagged<Item, UUID>
     var name: String
 
     static func < (lhs: Self, rhs: Self) -> Bool {
