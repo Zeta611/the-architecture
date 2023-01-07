@@ -9,17 +9,12 @@ import SwiftUI
 import IdentifiedCollections
 
 struct ContentView: View {
-    @FetchRequest(sortDescriptors: []) var groups: FetchedResults<GroupStore>
+    @Environment(\.managedObjectContext) var viewContext
 
     var body: some View {
-        let groups = IdentifiedArray(uniqueElements: groups.map(Group.init))
-
         GroupView(
             viewModel: GroupViewModel(
-                groups: groups,
-                navigationDestination: .itemView(
-                    ItemViewModel(group: groups.first { $0.name == "G4" }!)
-                ),
+                viewContext: viewContext,
                 editDestination: .isEditing(.deleteGroups)
             )
         )

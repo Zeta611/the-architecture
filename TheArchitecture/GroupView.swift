@@ -6,6 +6,7 @@
 //
 
 import Combine
+import CoreData
 import IdentifiedCollections
 import SwiftUI
 import SwiftUINavigation
@@ -14,6 +15,8 @@ import Tagged
 final class GroupViewModel: ObservableObject {
     @Published var groups: IdentifiedArrayOf<Group>
     @Published var selectedGroups: Set<Group.ID> = []
+
+    private var cancellables: Set<AnyCancellable> = []
 
     @Published var navigationDestination: NavigationDestination? {
         didSet { bind() }
@@ -49,17 +52,106 @@ final class GroupViewModel: ObservableObject {
     }
 
     init(
-        groups: IdentifiedArrayOf<Group>,
+        viewContext: NSManagedObjectContext,
         navigationDestination: NavigationDestination? = nil,
         editDestination: EditDestination? = nil
     ) {
         defer { bind() }
 
-        self.groups = groups
+        let fetchRequest = GroupStore.fetchRequest()
+        do {
+            let groupStores = try viewContext.fetch(fetchRequest)
+            self.groups = IdentifiedArray(uniqueElements: groupStores.map(Group.init))
+        } catch {
+            self.groups = []
+        }
+
         defer { self.groups.sort() }
 
         self.navigationDestination = navigationDestination
         self.editDestination = editDestination
+
+        self.$groups
+            .dropFirst()
+            .debounce(for: .seconds(1), scheduler: DispatchQueue.main)
+            .sink { groups in
+                // Save to Core Data
+                let requestForUpdateExisting = GroupStore.fetchRequest()
+                requestForUpdateExisting.predicate = NSPredicate(
+                    format: "%K IN %@",
+                    // \GroupStore.id worked before, but not now:
+                    // https://stackoverflow.com/a/74004215
+                    NSExpression(forKeyPath: \GroupStore.id).keyPath,
+                    groups.map { $0.id.rawValue as NSUUID }
+                )
+
+                let requestForRemoveExisting = GroupStore.fetchRequest()
+                requestForRemoveExisting.predicate = NSPredicate(
+                    format: "NOT (%K IN %@)",
+                    NSExpression(forKeyPath: \GroupStore.id).keyPath,
+                    groups.map { $0.id.rawValue as NSUUID }
+                )
+
+                // This is a stupid logic that should be modified; but it serves its purpose for now
+                do {
+                    // For updating existing groups
+                    let updateGroupStores = try viewContext.fetch(requestForUpdateExisting)
+                    for groupStore in updateGroupStores {
+                        let groupID = groupStore.id!
+                        guard let group = groups[id: Tagged(groupID)] else {
+                            // Group deleted
+                            viewContext.delete(groupStore)
+                            continue
+                        }
+
+                        if group.name != groupStore.name {
+                            groupStore.name = group.name
+                        }
+
+                        for itemStore in groupStore.items! as! Set<ItemStore> {
+                            let itemID = itemStore.id!
+                            guard let item = group.items[id: Tagged(itemID)] else {
+                                // Item deleted
+                                viewContext.delete(itemStore)
+                                continue
+                            }
+
+                            if item.name != itemStore.name {
+                                itemStore.name = item.name
+                            }
+                        }
+                        for item in group.items {
+                            guard !(groupStore.items! as! Set<ItemStore>).contains(where: { $0.id == item.id.rawValue }) else {
+                                continue
+                            }
+
+                            item.store(context: viewContext, group: groupStore)
+                        }
+                    }
+
+                    // For adding new groups
+                    for group in groups {
+                        guard !updateGroupStores.contains(where : { $0.id == group.id.rawValue }) else {
+                            continue
+                        }
+
+                        let newGroupStore = group.store(context: viewContext, items: [])
+                        for item in group.items {
+                            item.store(context: viewContext, group: newGroupStore)
+                        }
+                    }
+
+                    // For removing existing groups
+                    let removeGroupStores = try viewContext.fetch(requestForRemoveExisting)
+                    removeGroupStores.forEach { viewContext.delete($0) }
+
+                    try viewContext.save()
+                } catch {
+                    let nsError = error as NSError
+                    fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+                }
+            }
+            .store(in: &cancellables)
     }
 
     func groupTapped(_ group: Group) {
@@ -210,15 +302,9 @@ extension ConfirmationDialogState where Action == GroupViewModel.EditDestination
 struct GroupView_Previews: PreviewProvider {
     static var previews: some View {
         let viewContext = PersistenceController.preview.container.viewContext
-        let groupStores = try! viewContext.fetch(GroupStore.fetchRequest())
-        let groups = IdentifiedArray(uniqueElements: groupStores.map(Group.init))
-
         GroupView(
             viewModel: GroupViewModel(
-                groups: groups,
-                navigationDestination: .itemView(
-                    ItemViewModel(group: groups.first { $0.name == "G2" }!)
-                ),
+                viewContext: viewContext,
                 editDestination: .isEditing(.deleteGroups)
             )
         )
